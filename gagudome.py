@@ -1,9 +1,3 @@
-# crawler for udong corp.
-
-# 상품명
-# 공급가 - not yet
-# 상세페이지 들어가면 나오는 모델명
-# 상세페이지의 이미지 url
 import requests
 from bs4 import BeautifulSoup
 import json, os
@@ -40,14 +34,16 @@ async def bs4_getter_temp(dic):
     info_img = []
     for i in detail_info_img:
         try:
-            info_img.append(i['ec-data-src'])
+            info_img.append(str(i['src']))
+            info_img.append(str(i['ec-data-src']))
         except:
-            print(dic)
+            # print(dic)
+            pass
             
 
-    dic['detail_name'] = detail_name
-    dic['detail_info_img'] = info_img
-    dic['options'] = options
+    dic['detail_name'] = str(detail_name)
+    dic['detail_info_img'] = str(info_img)
+    dic['options'] = str(options)
 
     return dic
 
