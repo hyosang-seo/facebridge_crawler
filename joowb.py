@@ -1,3 +1,4 @@
+from email.mime import application
 import requests
 from bs4 import BeautifulSoup
 import json, os
@@ -10,21 +11,22 @@ async def bs4_getter_temp(dic, session, login_info):
         login_info["ID_NAME"] : login_info['USER'],
         login_info["PASS_NAME"] : login_info['PASS']
         }
-    response = session.get(dic['href'], headers={ "User-Agent": "Mozilla/5.0" }, data=login_info)
-
+    response = session.post(dic['href'], headers={ "User-Agent": "Mozilla/5.0", "Host":"joowb.com", "Accept":"application/javascript" }, data=login_info)
+    print(response)
     # except
     html = response.text
     soup = BeautifulSoup(html, 'html.parser')
-
+    print(soup)
     # title_detail_xpath = '.item_name'
-    detail_name_xpath = '#contents > div.xans-element-.xans-product.xans-product-detail > div.detailArea > div.buy-wrapper > div.buy-scroll-box > div.infoArea > div.xans-element-.xans-product.xans-product-detaildesign > table > tbody > tr:nth-child(6) > td > span'
-    detail_img_xpath = 'div.keyImg.item > div.thumbnail > a > img'
-    detail_info_img_xpath = '#prdDetail > div.cont > div > img'
+    detail_name_xpath ='#df-product-detail > div > div.infoArea-wrap > div > div > div.scroll-wrapper.df-detail-fixed-scroll.scrollbar-macosx > div.df-detail-fixed-scroll.scrollbar-macosx.scroll-content > div.headingArea > h2'
+    detail_img_xpath = '.swiper-slide-active > div > img'
+    detail_info_img_xpath = '#prdDetail > div.cont > div:nth-child(3) > img'
     option_xpath = '#product_option_id1 > option'
     # title_detail = soup.select(title_detail_xpath)
 
+
     detail_name = soup.select(detail_name_xpath)
-    detail_img = soup.select_one(detail_img_xpath)
+    detail_img = soup.select(detail_img_xpath)
     detail_info_img = soup.select(detail_info_img_xpath)
     options_info = soup.select(option_xpath)
 
@@ -32,10 +34,12 @@ async def bs4_getter_temp(dic, session, login_info):
     for i in options_info:
         option_text = i.text
         options.append(option_text)
-
-    print("detail_img : ",detail_img)
     
-    dic['img'] = detail_img['src']
+    _ = []
+    for i in detail_img:
+        print(i)
+        _.append(i['src'])
+    dic['img'] = _
     info_img = []
     for i in detail_info_img:
         try:
@@ -90,14 +94,14 @@ def get_detail_info(web_name, main_result, login_info):
 if __name__ == "__main__":
     start = time.time()  # 시작 시간 저장
     # print("start")
-    web_name = 'gagudome'
+    web_name = 'joowb'
 
     USER = "facebridge20"
-    PASS = "tmakxm12!@"
-    LOGIN_URL = 'https://gagudome.kr/member/login.html'
+    PASS = "spqjf15"
+    LOGIN_URL = 'http://joowb.com/member/login.html'
     ID_NAME = 'member_id'
     PASS_NAME = 'member_passwd'
-    LOGIN_BTN = 'loginBtn'
+    LOGIN_BTN = '/html/body/div[1]/div[2]/div/div[3]/div/div[1]/form/div/fieldset/a[1]' # xpath
     MAIN_TITLE_TAG = 'title'
     MAIN_HREF_TAG = 'href'
 
@@ -124,10 +128,10 @@ if __name__ == "__main__":
         print('main result not exist')
         driver = get_driver()
         print("got driver")
-        url = 'https://gagudome.kr/product/list.html?cate_no=113&sort_method=5&page='
+        url = 'http://joowb.com/product/list.html?cate_no=229'
         item_xpath = {
-            "item_href_xpath" : '/html/body/div[4]/div/div[2]/div[4]/div[2]/ul/li/div[2]/p[2]/a',
-            "item_title_xpath" : '/html/body/div[4]/div/div[2]/div[4]/div[2]/ul/li/div[2]/p[2]/a'
+            "item_href_xpath" : '/html/body/div[1]/div[2]/div/div[2]/div[2]/ul/li/div/div[1]/a',
+            "item_title_xpath" : '/html/body/div[1]/div[2]/div/div[2]/div[2]/ul/li/div/div[3]/div/a/span'
         }
 
         main_result = item_list_crawler(driver, item_xpath, url, tag_info, login_info)
@@ -136,18 +140,15 @@ if __name__ == "__main__":
         temp_save(web_name, main_result)
         print("temp_save done")
 
-    main_result =[{
-        "title": "[도매상품] 숲속귀족 높은 자작나무 책꽂이",
-        "href": "https://gagudome.kr/product/%EB%8F%84%EB%A7%A4%EC%83%81%ED%92%88-%EC%88%B2%EC%86%8D%EA%B7%80%EC%A1%B1-%EB%86%92%EC%9D%80-%EC%9E%90%EC%9E%91%EB%82%98%EB%AC%B4-%EC%B1%85%EA%BD%82%EC%9D%B4/3277/category/113/display/1/"
+    main_result = [
+    {
+        "title": "아로니아 생과 10kg/5kg",
+        "href": "http://joowb.com/product/detail.html?product_no=601&cate_no=229&display_group=1"
     },
     {
-        "title": "[도매상품] 숲속귀족 라운딩 잡지꽂이",
-        "href": "https://gagudome.kr/product/%EB%8F%84%EB%A7%A4%EC%83%81%ED%92%88-%EC%88%B2%EC%86%8D%EA%B7%80%EC%A1%B1-%EB%9D%BC%EC%9A%B4%EB%94%A9-%EC%9E%A1%EC%A7%80%EA%BD%82%EC%9D%B4/3276/category/113/display/1/"
-    },
-    {
-        "title": "[도매상품] 숲속귀족 낮은 자작나무 책꽂이",
-        "href": "https://gagudome.kr/product/%EB%8F%84%EB%A7%A4%EC%83%81%ED%92%88-%EC%88%B2%EC%86%8D%EA%B7%80%EC%A1%B1-%EB%82%AE%EC%9D%80-%EC%9E%90%EC%9E%91%EB%82%98%EB%AC%B4-%EC%B1%85%EA%BD%82%EC%9D%B4/3275/category/113/display/1/"
+        "title": "속단 300g",
+        "href": "http://joowb.com/product/detail.html?product_no=600&cate_no=229&display_group=1"
     }]
     print("start get detail_info")
     get_detail_info(web_name, main_result, login_info)
-    print("time :", time.time() - start)  # 현재시각 - 시작시간 = 실행 시간
+    # print("time :", time.time() - start)  # 현재시각 - 시작시간 = 실행 시간

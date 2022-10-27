@@ -90,14 +90,14 @@ def get_detail_info(web_name, main_result, login_info):
 if __name__ == "__main__":
     start = time.time()  # 시작 시간 저장
     # print("start")
-    web_name = 'gagudome'
+    web_name = 'unionpet'
 
     USER = "facebridge20"
     PASS = "tmakxm12!@"
-    LOGIN_URL = 'https://gagudome.kr/member/login.html'
-    ID_NAME = 'member_id'
-    PASS_NAME = 'member_passwd'
-    LOGIN_BTN = 'loginBtn'
+    LOGIN_URL = 'https://unionpet.co.kr/member/login.php'
+    ID_NAME = 'loginId'
+    PASS_NAME = 'loginPwd'
+    LOGIN_BTN = '//*[@id="formLogin"]/div[1]/div[1]/button'
     MAIN_TITLE_TAG = 'title'
     MAIN_HREF_TAG = 'href'
 
@@ -136,18 +136,7 @@ if __name__ == "__main__":
         temp_save(web_name, main_result)
         print("temp_save done")
 
-    main_result =[{
-        "title": "[도매상품] 숲속귀족 높은 자작나무 책꽂이",
-        "href": "https://gagudome.kr/product/%EB%8F%84%EB%A7%A4%EC%83%81%ED%92%88-%EC%88%B2%EC%86%8D%EA%B7%80%EC%A1%B1-%EB%86%92%EC%9D%80-%EC%9E%90%EC%9E%91%EB%82%98%EB%AC%B4-%EC%B1%85%EA%BD%82%EC%9D%B4/3277/category/113/display/1/"
-    },
-    {
-        "title": "[도매상품] 숲속귀족 라운딩 잡지꽂이",
-        "href": "https://gagudome.kr/product/%EB%8F%84%EB%A7%A4%EC%83%81%ED%92%88-%EC%88%B2%EC%86%8D%EA%B7%80%EC%A1%B1-%EB%9D%BC%EC%9A%B4%EB%94%A9-%EC%9E%A1%EC%A7%80%EA%BD%82%EC%9D%B4/3276/category/113/display/1/"
-    },
-    {
-        "title": "[도매상품] 숲속귀족 낮은 자작나무 책꽂이",
-        "href": "https://gagudome.kr/product/%EB%8F%84%EB%A7%A4%EC%83%81%ED%92%88-%EC%88%B2%EC%86%8D%EA%B7%80%EC%A1%B1-%EB%82%AE%EC%9D%80-%EC%9E%90%EC%9E%91%EB%82%98%EB%AC%B4-%EC%B1%85%EA%BD%82%EC%9D%B4/3275/category/113/display/1/"
-    }]
-    print("start get detail_info")
-    get_detail_info(web_name, main_result, login_info)
-    print("time :", time.time() - start)  # 현재시각 - 시작시간 = 실행 시간
+    
+    # print("start get detail_info")
+    # get_detail_info(web_name, main_result, login_info)
+    # print("time :", time.time() - start)  # 현재시각 - 시작시간 = 실행 시간
