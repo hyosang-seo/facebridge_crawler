@@ -1,16 +1,17 @@
 import requests
 from bs4 import BeautifulSoup
 import json, os
-from lib import get_driver, get_item_info, item_list_crawler
+from lib import get_driver, get_item_info, item_list_crawler, login
 import time, asyncio
+from selenium.webdriver.common.by import By
 
 
-async def bs4_getter_temp(dic, session, login_info):
-    login_info = {
-        login_info["ID_NAME"] : login_info['USER'],
-        login_info["PASS_NAME"] : login_info['PASS']
-        }
-    response = session.get(dic['href'], headers={ "User-Agent": "Mozilla/5.0" }, data=login_info)
+
+async def bs4_getter_temp(dic, login_session, login_info):
+    
+    response = login_session.get(dic['href'], headers={ "User-Agent": "Mozilla/5.0" })
+    # response = login_session.get(dic['href'])
+
 
     # except
     html = response.text
@@ -33,8 +34,7 @@ async def bs4_getter_temp(dic, session, login_info):
         option_text = i.text
         options.append(option_text)
 
-    print("detail_img : ",detail_img)
-    
+    print(detail_img)
     dic['img'] = detail_img['src']
     info_img = []
     for i in detail_info_img:
@@ -52,9 +52,42 @@ async def bs4_getter_temp(dic, session, login_info):
 
     return dic
 
-async def bs4_getter_async(main_result, login_info):
-    session = requests.Session()
-    tasks = [asyncio.ensure_future(bs4_getter_temp(i, session, login_info)) for i in main_result]
+async def bs4_getter_temp_sele(dic, driver):
+    driver.get(dic['href'])
+    
+    detail_name_xpath = '//*[@id="frmView"]/div/div/div[2]/dl[5]/dd'
+    detail_img_xpath = '//*[@id="mainImage"]/img'
+    detail_info_img_xpath = '//*[@id="detail"]/div[2]/div/div[2]/center/img'
+    # option_selector = '#product_option_id1 > option'
+    # title_detail = soup.select(title_detail_xpath)
+
+    detail_name = driver.find_elements(By.XPATH, detail_name_xpath)
+    detail_img = driver.find_elements(By.XPATH,detail_img_xpath)
+    detail_info_img = driver.find_elements(By.XPATH, detail_info_img_xpath)
+
+    dic['img'] = []
+    for i in detail_img:
+        dic['img'].append(i.get_attribute('src'))
+    
+    info_img = []
+    for i in detail_info_img:
+        info_img.append(i.get_attribute('src'))
+
+    info_img = []
+    for i in info_img:
+        info_img.append(i.get_attribute('src'))
+
+
+    dic['detail_name'] = detail_name[0].text
+    dic['detail_info_img'] = info_img
+
+
+    return dic
+
+async def bs4_getter_async(main_result, login_info, login_session):
+    # tasks = [asyncio.ensure_future(bs4_getter_temp_sele(i, login_session, login_info)) for i in main_result[:3]]
+    tasks = [asyncio.ensure_future(bs4_getter_temp_sele(i, driver)) for i in main_result]
+
     target = await asyncio.gather(*tasks)
 
     return target
@@ -65,12 +98,27 @@ def temp_save(web_name, result):
         json.dump(result, k, ensure_ascii=False)
 
 
+def get_login_session(login_info):
+    """
+    get response
+    """
 
+
+    login_url = login_info['LOGIN_URL']
+    login_info = {
+        login_info["ID_NAME"] : login_info['USER'],
+        login_info["PASS_NAME"] : login_info['PASS']
+        }
+    session = requests.Session()
+    res = session.post(login_url, data=login_info)
+    return res
+    
 def get_detail_info(web_name, main_result, login_info):
     err_list = []
     loop = asyncio.get_event_loop()
-    ss = []
-    target_result =loop.run_until_complete(bs4_getter_async(main_result, login_info))
+    login_session = get_login_session(login_info)
+
+    target_result =loop.run_until_complete(bs4_getter_async(main_result, login_info, login_session))
     loop.close
 
     with open(f'{web_name}/error.txt', 'w') as et:
@@ -89,7 +137,6 @@ def get_detail_info(web_name, main_result, login_info):
 
 if __name__ == "__main__":
     start = time.time()  # 시작 시간 저장
-    # print("start")
     web_name = 'unionpet'
 
     USER = "facebridge20"
@@ -120,23 +167,31 @@ if __name__ == "__main__":
         print('already exist')
         with open(f'./{web_name}/main_result.json', 'r') as k:
             main_result = json.load(k)
+
+        driver = get_driver()
+        driver = login(driver, login_info)
+
     else:
         print('main result not exist')
         driver = get_driver()
-        print("got driver")
-        url = 'https://gagudome.kr/product/list.html?cate_no=113&sort_method=5&page='
-        item_xpath = {
-            "item_href_xpath" : '/html/body/div[4]/div/div[2]/div[4]/div[2]/ul/li/div[2]/p[2]/a',
-            "item_title_xpath" : '/html/body/div[4]/div/div[2]/div[4]/div[2]/ul/li/div[2]/p[2]/a'
-        }
+        urls = ['https://www.unionpet.co.kr/goods/goods_list.php?cateCd=105','https://www.unionpet.co.kr/goods/goods_list.php?cateCd=104']
 
-        main_result = item_list_crawler(driver, item_xpath, url, tag_info, login_info)
+        main_result = []
+        url = urls[0]
+        item_xpath = {
+            "item_href_xpath" : '//*[@id="contents"]/div/div/div[2]/div[4]/div/div[1]/ul/li/div/div[1]/a',
+            "item_title_xpath" : '//*[@id="contents"]/div/div/div[2]/div[4]/div/div[1]/ul/li/div/div[2]/div[1]/a/strong'
+        }
+        main_result.extend(item_list_crawler(driver, item_xpath, url, tag_info, login_info))
+        url = urls[1]
+        main_result.extend(item_list_crawler(driver, item_xpath, url, tag_info))
+
         print("get main_result")
-        driver.close()
+        # driver.close()
         temp_save(web_name, main_result)
         print("temp_save done")
 
-    
-    # print("start get detail_info")
-    # get_detail_info(web_name, main_result, login_info)
-    # print("time :", time.time() - start)  # 현재시각 - 시작시간 = 실행 시간
+    print("start get detail_info")
+    get_detail_info(web_name, main_result, login_info)
+
+    print("time :", time.time() - start)  # 현재시각 - 시작시간 = 실행 시간

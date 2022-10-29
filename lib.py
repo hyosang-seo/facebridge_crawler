@@ -105,7 +105,9 @@ def get_item_info(driver, item_xpath, tag_info):
     return dic_list
 
 def login(driver, login_info):
-    login_info = login_info[0]
+    if isinstance(login_info, tuple):
+        login_info = login_info[0]
+    print(login_info)
     USER = login_info["USER"]
     PASS = login_info["PASS"]
     LOGIN_URL = login_info["LOGIN_URL"]
@@ -118,6 +120,7 @@ def login(driver, login_info):
     driver.find_element_by_name(PASS_NAME).send_keys(PASS)
     # driver.find_element_by_class_name(LOGIN_BTN).click()
     driver.find_element(By.XPATH, LOGIN_BTN).click()
+    time.sleep(2)
 
     return driver
 
@@ -131,8 +134,8 @@ def item_list_crawler(driver, item_xpath, url, tag_info, *login_info):
     if login_info:
         driver = login(driver, login_info)
         time.sleep(1)
+        
     while item_count != 0:
-    # while page_num < 2:
         driver.get(url + "&page="+ str(page_num))
         result_dic = get_item_info(driver, item_xpath, tag_info)
         print(f"page : {page_num} item count : {len(result_dic)} EA")
@@ -140,6 +143,7 @@ def item_list_crawler(driver, item_xpath, url, tag_info, *login_info):
         item_count = len(result_dic)
         result.extend(result_dic)
 
+    print("total count : ", len(result))
     return result
 
 
