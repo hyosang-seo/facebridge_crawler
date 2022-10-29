@@ -4,7 +4,7 @@ import json, os
 from lib import get_driver, get_item_info, item_list_crawler, login
 import time, asyncio
 from selenium.webdriver.common.by import By
-
+from tqdm import tqdm
 
 
 async def bs4_getter_temp(dic, login_session, login_info):
@@ -34,7 +34,6 @@ async def bs4_getter_temp(dic, login_session, login_info):
         option_text = i.text
         options.append(option_text)
 
-    print(detail_img)
     dic['img'] = detail_img['src']
     info_img = []
     for i in detail_info_img:
@@ -53,15 +52,15 @@ async def bs4_getter_temp(dic, login_session, login_info):
     return dic
 
 async def bs4_getter_temp_sele(dic, driver):
+    print(dic['href'])
     driver.get(dic['href'])
+
     
     detail_name_xpath = '//*[@id="frmView"]/div/div/div[2]/dl[5]/dd'
     detail_img_xpath = '//*[@id="mainImage"]/img'
     detail_info_img_xpath = '//*[@id="detail"]/div[2]/div/div[2]/center/img'
-    # option_selector = '#product_option_id1 > option'
-    # title_detail = soup.select(title_detail_xpath)
 
-    detail_name = driver.find_elements(By.XPATH, detail_name_xpath)
+    detail_name_list = driver.find_elements(By.XPATH, detail_name_xpath)
     detail_img = driver.find_elements(By.XPATH,detail_img_xpath)
     detail_info_img = driver.find_elements(By.XPATH, detail_info_img_xpath)
 
@@ -69,24 +68,19 @@ async def bs4_getter_temp_sele(dic, driver):
     for i in detail_img:
         dic['img'].append(i.get_attribute('src'))
     
-    info_img = []
+    dic['detail_info_img'] = []
     for i in detail_info_img:
-        info_img.append(i.get_attribute('src'))
+        dic['detail_info_img'].append(i.get_attribute('src'))
 
-    info_img = []
-    for i in info_img:
-        info_img.append(i.get_attribute('src'))
-
-
-    dic['detail_name'] = detail_name[0].text
-    dic['detail_info_img'] = info_img
-
+    dic['detail_name'] = []
+    for i in detail_name_list:
+        dic['detail_name'].append(i.text)
 
     return dic
 
 async def bs4_getter_async(main_result, login_info, login_session):
     # tasks = [asyncio.ensure_future(bs4_getter_temp_sele(i, login_session, login_info)) for i in main_result[:3]]
-    tasks = [asyncio.ensure_future(bs4_getter_temp_sele(i, driver)) for i in main_result]
+    tasks = [asyncio.ensure_future(bs4_getter_temp_sele(i, driver)) for i in tqdm(main_result)]
 
     target = await asyncio.gather(*tasks)
 
@@ -123,7 +117,6 @@ def get_detail_info(web_name, main_result, login_info):
 
     with open(f'{web_name}/error.txt', 'w') as et:
         for i in err_list:
-            # json.dump(err_list, et, ensure_ascii=False)
             et.write(json.dumps(i)+ '\n')
 
     with open(f'{web_name}/target_result.json', 'w') as tt:
@@ -190,7 +183,7 @@ if __name__ == "__main__":
         # driver.close()
         temp_save(web_name, main_result)
         print("temp_save done")
-
+    main_result = list(set(main_result))
     print("start get detail_info")
     get_detail_info(web_name, main_result, login_info)
 
