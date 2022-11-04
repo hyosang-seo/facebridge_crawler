@@ -1,4 +1,4 @@
-*/*.txt
+*/*/*.txt
 */*.json
 */*.tsv
 __pycache__
