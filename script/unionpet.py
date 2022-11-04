@@ -7,7 +7,7 @@ from selenium.webdriver.common.by import By
 from tqdm import tqdm
 
 
-async def bs4_getter_temp(dic, login_session, login_info):
+def bs4_getter_temp(dic, login_session, login_info):
     
     response = login_session.get(dic['href'], headers={ "User-Agent": "Mozilla/5.0" })
     # response = login_session.get(dic['href'])
@@ -51,18 +51,28 @@ async def bs4_getter_temp(dic, login_session, login_info):
 
     return dic
 
-async def bs4_getter_temp_sele(dic, driver):
-    print(dic['href'])
+def bs4_getter_temp_sele(dic, driver, tct):
     driver.get(dic['href'])
 
-    
-    detail_name_xpath = '//*[@id="frmView"]/div/div/div[2]/dl[5]/dd'
     detail_img_xpath = '//*[@id="mainImage"]/img'
-    detail_info_img_xpath = '//*[@id="detail"]/div[2]/div/div[2]/center/img'
+    detail_info_img_class = 'detail_explain_box'
+    detail_title_xpath = '/html/body/div[2]/div[2]/div/div/div[1]/div[2]/form/div/div/div[2]/dl/dt'
+    detail_text_xpath = '/html/body/div[2]/div[2]/div/div/div[1]/div[2]/form/div/div/div[2]/dl/dd'
 
-    detail_name_list = driver.find_elements(By.XPATH, detail_name_xpath)
     detail_img = driver.find_elements(By.XPATH,detail_img_xpath)
-    detail_info_img = driver.find_elements(By.XPATH, detail_info_img_xpath)
+    detail_info_img = driver.find_elements(By.CLASS_NAME, detail_info_img_class)
+    detail_title = driver.find_elements(By.XPATH, detail_title_xpath)
+    detail_text = driver.find_elements(By.XPATH, detail_text_xpath)
+
+    dic['qty'] = 'need to check'
+    dic['model_name'] = 'need to check'
+
+    for n, i in enumerate(detail_title):
+        if i.text == '상품재고':
+            dic['qty'] = detail_text[n].text
+
+        if i.text == '자체상품코드':
+            dic['model_name'] = detail_text[n].text
 
     dic['img'] = []
     for i in detail_img:
@@ -70,25 +80,22 @@ async def bs4_getter_temp_sele(dic, driver):
     
     dic['detail_info_img'] = []
     for i in detail_info_img:
-        dic['detail_info_img'].append(i.get_attribute('src'))
+        img_tags = i.find_elements(By.TAG_NAME, 'img')
+        for i in img_tags:
+            dic['detail_info_img'].append(i.get_attribute('src'))
 
-    dic['detail_name'] = []
-    for i in detail_name_list:
-        dic['detail_name'].append(i.text)
+    tct.write(f"{dic['title']}\t{dic['model_name']}\t{dic['img']}\t{dic['href']}\t{dic['detail_info_img']}\t{dic['qty']}\n")
 
-    return dic
 
-async def bs4_getter_async(main_result, login_info, login_session):
-    # tasks = [asyncio.ensure_future(bs4_getter_temp_sele(i, login_session, login_info)) for i in main_result[:3]]
-    tasks = [asyncio.ensure_future(bs4_getter_temp_sele(i, driver)) for i in tqdm(main_result)]
+def get_detail_info(web_name, result_processed, driver):
+    with open(f'../result/{web_name}/target_result.tsv', 'a') as tct:
+        for i in tqdm(result_processed):
+            print(i)
+            bs4_getter_temp_sele(i, driver, tct)
 
-    target = await asyncio.gather(*tasks)
-
-    return target
 
 def temp_save(web_name, result):
-    os.makedirs(web_name, exist_ok=True)
-    with open(f'{web_name}/main_result.json', 'w') as k:
+    with open(f'../result/{web_name}/main_result.json', 'w') as k:
         json.dump(result, k, ensure_ascii=False)
 
 
@@ -97,7 +104,6 @@ def get_login_session(login_info):
     get response
     """
 
-
     login_url = login_info['LOGIN_URL']
     login_info = {
         login_info["ID_NAME"] : login_info['USER'],
@@ -105,28 +111,11 @@ def get_login_session(login_info):
         }
     session = requests.Session()
     res = session.post(login_url, data=login_info)
+
     return res
     
-def get_detail_info(web_name, main_result, login_info):
-    err_list = []
-    loop = asyncio.get_event_loop()
-    login_session = get_login_session(login_info)
 
-    target_result =loop.run_until_complete(bs4_getter_async(main_result, login_info, login_session))
-    loop.close
 
-    with open(f'{web_name}/error.txt', 'w') as et:
-        for i in err_list:
-            et.write(json.dumps(i)+ '\n')
-
-    with open(f'{web_name}/target_result.json', 'w') as tt:
-        json.dump(target_result, tt, ensure_ascii=False)
-
-    with open(f'{web_name}/target_result.tsv', 'w') as tct:
-        tct.write('title\tdetail_name\timg\thref\detail_info_img\n')
-        for i in target_result:
-            tct.write(f"{i['title']}\t{i['detail_name']}\t{i['img']}\t{i['href']}\t{i['detail_info_img']}\n")
-            
 
 if __name__ == "__main__":
     start = time.time()  # 시작 시간 저장
@@ -156,9 +145,9 @@ if __name__ == "__main__":
 
     }
 
-    if os.path.exists(f'./{web_name}/main_result.json'):
+    if os.path.exists(f'../result/{web_name}/main_result.json'):
         print('already exist')
-        with open(f'./{web_name}/main_result.json', 'r') as k:
+        with open(f'../result/{web_name}/main_result.json', 'r') as k:
             main_result = json.load(k)
 
         driver = get_driver()
@@ -167,24 +156,38 @@ if __name__ == "__main__":
     else:
         print('main result not exist')
         driver = get_driver()
+        driver = login(driver, login_info)
+
         urls = ['https://www.unionpet.co.kr/goods/goods_list.php?cateCd=105','https://www.unionpet.co.kr/goods/goods_list.php?cateCd=104']
 
         main_result = []
         url = urls[0]
+
         item_xpath = {
             "item_href_xpath" : '//*[@id="contents"]/div/div/div[2]/div[4]/div/div[1]/ul/li/div/div[1]/a',
             "item_title_xpath" : '//*[@id="contents"]/div/div/div[2]/div[4]/div/div[1]/ul/li/div/div[2]/div[1]/a/strong'
         }
-        main_result.extend(item_list_crawler(driver, item_xpath, url, tag_info, login_info))
-        url = urls[1]
-        main_result.extend(item_list_crawler(driver, item_xpath, url, tag_info))
+        for url in urls:
+            main_result.extend(item_list_crawler(driver, item_xpath, url, tag_info))
 
         print("get main_result")
-        # driver.close()
+        os.makedirs(f'../result/{web_name}', exist_ok=True)
+
         temp_save(web_name, main_result)
         print("temp_save done")
-    main_result = list(set(main_result))
+
+    print("checking_url")
+    _ = []
+    result_processed = []
+    for i in main_result:
+        url = i['href']
+        if url not in _:
+            result_processed.append(i)
+    with open(f'../result/{web_name}/target_result.tsv', 'w') as _:
+        _.write("title\tmodel_name\timg\thref\tdetail_info_img\tqty\n")
+    _.close
+
     print("start get detail_info")
-    get_detail_info(web_name, main_result, login_info)
+    get_detail_info(web_name, result_processed, driver)
 
     print("time :", time.time() - start)  # 현재시각 - 시작시간 = 실행 시간

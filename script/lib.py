@@ -15,7 +15,7 @@ def get_driver():
     options.add_argument("--lang=ko_KR")
     options.add_argument(
         'user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36')
-    driver = webdriver.Chrome('./chromedriver', chrome_options=options)
+    driver = webdriver.Chrome('../chromedriver', chrome_options=options)
 
     return driver
 
@@ -107,7 +107,6 @@ def get_item_info(driver, item_xpath, tag_info):
 def login(driver, login_info):
     if isinstance(login_info, tuple):
         login_info = login_info[0]
-    print(login_info)
     USER = login_info["USER"]
     PASS = login_info["PASS"]
     LOGIN_URL = login_info["LOGIN_URL"]
@@ -124,17 +123,14 @@ def login(driver, login_info):
 
     return driver
 
-def item_list_crawler(driver, item_xpath, url, tag_info, *login_info):
+def item_list_crawler(driver, item_xpath, url, tag_info):
     """
     item text, href crawrling until len(items) == 0
     """
     result =[]
     item_count = 1
     page_num = 1
-    if login_info:
-        driver = login(driver, login_info)
-        time.sleep(1)
-        
+    
     while item_count != 0:
         driver.get(url + "&page="+ str(page_num))
         result_dic = get_item_info(driver, item_xpath, tag_info)
