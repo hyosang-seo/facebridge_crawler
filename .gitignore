@@ -1,4 +1,5 @@
 */*/*.txt
 result/*/*.json
-result/*/*.tsv
 __pycache__
+
+result/*/target_result.tsv
