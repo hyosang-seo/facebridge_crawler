@@ -5,7 +5,9 @@ from lib import get_driver, get_item_info, item_list_crawler, login
 import time, asyncio
 from selenium.webdriver.common.by import By
 from tqdm import tqdm
-
+import multiprocessing as mp
+from multiprocessing import Pool
+from functools import partial
 
 def bs4_getter_temp(dic, login_session, login_info):
     
@@ -51,7 +53,7 @@ def bs4_getter_temp(dic, login_session, login_info):
 
     return dic
 
-def bs4_getter_temp_sele(dic, driver, tct):
+def bs4_getter_temp_sele(driver, tct, dic):
     driver.get(dic['href'])
 
     detail_img_xpath = '//*[@id="mainImage"]/img'
@@ -88,10 +90,33 @@ def bs4_getter_temp_sele(dic, driver, tct):
 
 
 def get_detail_info(web_name, result_processed, driver):
+    procs = []
+
+    # num_cores = mp.cpu_count()
+    # num_cores = 3
+
+    # print("num_cores : ",num_cores)
+    # pool = Pool(num_cores)
+    # object_list = []
     with open(f'../result/{web_name}/target_result.tsv', 'a') as tct:
+        func = partial(bs4_getter_temp_sele, driver, tct)
+
         for i in tqdm(result_processed):
-            print(i)
-            bs4_getter_temp_sele(i, driver, tct)
+            func(i)
+        # pool.map(func,result_processed)
+        # pool.close()
+        # pool.join()
+
+        # # proc producing
+        # for i in tqdm(result_processed):
+            # proc = Process(target=bs4_getter_temp_sele, args = (i, driver, tct))
+        #     procs.append(proc)
+        #     proc.start()
+
+        # # proc waiting done
+        # for proc in procs:
+        #     proc.join()
+
 
 
 def temp_save(web_name, result):
